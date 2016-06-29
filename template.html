@@ -1,0 +1,235 @@
+
+<!-- saved from url=(0065)http://i5ting.github.io/i5ting_ztree_toc/build/jquery.plugin.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+					  
+		        <title>jquery.plugin</title>
+						
+						<link href="./static/e.css" media="all" rel="stylesheet" type="text/css">
+						<link href="./static/a.css" media="all" rel="stylesheet" type="text/css">
+				
+					  <style>
+						pre {
+						    counter-reset: line-numbering;
+						    border: solid 1px #d9d9d9;
+						    border-radius: 0;
+						    background: #fff;
+						    padding: 0;
+						    line-height: 23px;
+						    margin-bottom: 30px;
+						    white-space: pre;
+						    overflow-x: auto;
+						    word-break: inherit;
+						    word-wrap: inherit;
+						}
+
+						pre a::before {
+						  content: counter(line-numbering);
+						  counter-increment: line-numbering;
+						  padding-right: 1em; /* space after numbers */
+						  width: 25px;
+						  text-align: right;
+						  opacity: 0.7;
+						  display: inline-block;
+						  color: #aaa;
+						  background: #eee;
+						  margin-right: 16px;
+						  padding: 2px 10px;
+						  font-size: 13px;
+						  -webkit-touch-callout: none;
+						  -webkit-user-select: none;
+						  -khtml-user-select: none;
+						  -moz-user-select: none;
+						  -ms-user-select: none;
+						  user-select: none;
+						}
+
+						pre a:first-of-type::before {
+						  padding-top: 10px;
+						}
+
+						pre a:last-of-type::before {
+						  padding-bottom: 10px;
+						}
+
+						pre a:only-of-type::before {
+						  padding: 10px;
+						}
+					
+						.highlight { background-color: #ffffcc } /* RIGHT */
+						</style>
+					  <link rel="stylesheet" href="./static/zTreeStyle.css" type="text/css">
+					  <style>
+					
+						.ztree li a.curSelectedNode {
+							padding-top: 0px;
+							background-color: #FFE6B0;
+							color: black;
+							height: 16px;
+							border: 1px #FFB951 solid;
+							opacity: 0.8;
+						}
+						.ztree{
+							overflow: auto;
+							height:100%;
+							min-height: 200px;
+							top: 0px;
+						}
+					  </style>
+		      </head>
+		      <body style="">
+					  <div>
+								<div style="width:30%;">
+										<ul id="tree" class="ztree" style='width:100%'  ></ul>
+								</div>
+				        <div id="readme" style="width:70%;margin-left:25%;">
+				          	<article class="markdown-body">
+				            	
+								<h1>包含3种服务：SOA服务化，缓存服务（简单版），消息服务</h1>
+<h2>基本配置</h2>
+<h3>使用方法,在Spring配置文件中加入一行</h3>
+<pre><code>&lt;import resource=&quot;classpath:dove/dove-service.xml&quot;/&gt;
+</code></pre>
+
+<h3>会使用配置文件:</h3>
+<pre><code>classpath:/config/dove.properties
+</code></pre>
+
+<h3>配置文件内容说明（dove.properties）：</h3>
+<pre><code>#应用名称
+dove.appname=dove-3s-demo
+#
+soa.client=true
+soa.service=true
+soa.appname=test1
+#注册中心
+soa.registry=zookeeper://192.168.1.50:2181
+soa.localport=20880
+#
+cache.enable=true
+#缓存服务器
+cache.server=192.168.1.50:6379
+cache.password=jumore
+#
+message.enable=true
+#消息服务器
+message.server=192.168.1.51:9092
+</code></pre>
+
+<h2>SOA服务化</h2>
+<h3>远程接口定义</h3>
+<pre><code>public interface UserServiceRemote extends SOARemote {
+    User getUserById(int id);
+}
+</code></pre>
+
+<h3>远程接口实现</h3>
+<pre><code>@Service
+public class SOADemoUserService implements UserServiceRemote {
+    private static Logger logger = LoggerFactory.getLogger(SOADemoUserService.class);
+    public User getUserById(int id) {
+    }
+}
+</code></pre>
+
+<h3>访问远程接口</h3>
+<pre><code>//Spring 注入
+@Autowired
+SOAService soaService;
+public String demoRemote(int userId){
+    try {
+        UserServiceRemote userServiceRemote = soaService.getRemoteService(UserServiceRemote.class);
+        User user = userServiceRemote.getUserById(userId);
+        return user.toString();
+    }catch(Exception ex){
+        logger.error(&quot;demoRemote&quot;,ex);
+        return &quot;error:&quot; + ex.getMessage();
+    }
+}
+</code></pre>
+
+<h2>缓存服务</h2>
+<h3>缓存使用：</h3>
+<h3>使用方法一(在方法上加annotation)：</h3>
+<pre><code>@Cached( cacheTime=3600,toJVM = true)
+public DevSimpleObject invokeObj(int id,String name)
+{
+    logger.info(&quot;DevSampleServiceImpl.invokeObj create obj. &quot; + id + &quot; &quot; + name);
+    DevSimpleObject dt = new DevSimpleObject();
+    dt.setId(id);
+    dt.setName(name);
+    return dt;
+}
+</code></pre>
+
+<h3>Cached Annotation 详细解释</h3>
+<pre><code>public @interface Cached {
+    String objType() default &quot;&quot;; // 默认为空 ,将 包名.类名.方法名 作为 缓存包名
+    boolean toJVM() default false; // 默认为空
+    int cacheTime() default 3600; // 默认 1个小时,单位秒，缓存失效时间
+}
+</code></pre>
+
+<h3>使用方法二(在Spring中获取cacheService com.jumore.dove.cache.CacheService ):直接使用CacheService接口</h3>
+<pre><code>public interface CacheService {
+    // com.jumore.dove.cache.user + key(user id)
+    //public &lt;T&gt;T get(Class&lt;T&gt; cls, String objType,String id,Callable callable,int expireTime);
+    public String getString(String objType,String id,Callable&lt;String&gt; callable,int expireTime);
+    public String getString(String objType,String id);
+    public byte[] getData(String objType,String id,Callable&lt;byte[]&gt; callable,int expireTime);
+    public byte[] getData(String objType,String id);
+    public &lt;T&gt;T getObject(Class&lt;T&gt; cls, String objType,String id,Callable&lt;T&gt; callable,int expireTime);
+    public &lt;T&gt;T getObject(Class&lt;T&gt; cls, String objType,String id);
+    public void set(String objType,String id,Object obj,int expireTime);
+    public void del(String objType,String id );
+}
+</code></pre>
+
+<h1>消息服务</h1>
+<h3>发送消息</h3>
+<pre><code>//Spring 注入
+@Autowired
+MessageSendService messageSendService;
+public String regFinish(int userId)
+{
+    JSONObject jobj = new JSONObject();
+    jobj.put(&quot;userId&quot;,userId);
+    jobj.put(&quot;action&quot;,&quot;regFinish&quot;);
+    //发送消息的例子
+    messageSendService.sendMessage(&quot;newUser&quot;,jobj.toJSONString());
+    return &quot;success&quot;;
+}
+</code></pre>
+
+<h3>接收消息</h3>
+<pre><code>@Service
+@OnMessage(topic = &quot;newUser&quot;)
+public class MessageDemoSendToCustomerService implements MessageHandler{
+    private static Logger logger = Logger.getLogger(MessageDemoSendToCustomerService.class);
+    public void onNewMsg(Message msg)
+    {
+        logger.info(&quot;MessageDemoSendToCustomerService:onNewMsg:&quot; + msg );
+    }
+}
+</code></pre>
+
+
+
+				          	</article>
+				        </div>
+						</div>
+						<script src="./static/jquery-1.10.2.min.js"></script>
+						<script src="./static/jquery.ztree.all-3.5.min.js"></script>
+						<script src="./static/jquery.ztree_toc.min.js"></script>
+						<script type="text/javascript">
+							<!--
+							$(document).ready(function(){
+								$('#tree').ztree_toc({
+									is_auto_number:true,
+									documment_selector:'.markdown-body'
+								});
+							});
+							//-->
+						</script>
+		      
+		    
+		  </body></html>
