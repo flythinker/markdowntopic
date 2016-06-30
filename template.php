@@ -1,7 +1,7 @@
 <?php
 	$curDir = dirname(__FILE__); 
 	$name = $_GET['name'];
-	//echo $name.system("pandoc ".$name." -o ".$name.".html" );
+	system("pandoc ".$name." -o ".$name.".html" );
 	$mdHtmlContent = file_get_contents($curDir."/".$name.".html");
 	$topicHtmlFile = $curDir."/".$name."_topic.html";
 	//echo "<br/>";
